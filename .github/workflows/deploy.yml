@@ -1,4 +1,4 @@
-name: Deploy to Railway
+name: CI/CD Railway
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
+
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,10 +25,23 @@ jobs:
       - name: Run tests
         run: npm test
 
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy with Railway
+      - name: Deploy to Railway
         run: railway up --service version-control-web
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
