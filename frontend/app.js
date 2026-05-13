@@ -1,4 +1,4 @@
-fetch("http://localhost:3000/api/topics")
+fetch("api/topics")
     .then(res => res.json())
     .then(data => {
         const container = document.getElementById("topics");
