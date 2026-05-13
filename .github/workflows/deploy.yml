@@ -3,7 +3,7 @@ name: Deploy to Railway
 on:
   push:
     branches:
-      - main  # Cambia esto si tu rama de producción es otra
+      - main 
 
 jobs:
   deploy:
