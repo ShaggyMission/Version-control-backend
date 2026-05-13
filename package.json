@@ -1,0 +1,25 @@
+{
+  "name": "version-control-web",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShaggyMission/Version-control-web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ShaggyMission/Version-control-web/issues"
+  },
+  "homepage": "https://github.com/ShaggyMission/Version-control-web#readme",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
