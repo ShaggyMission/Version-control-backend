@@ -1,47 +1,66 @@
-name: CI/CD Railway
+name: CI/CD Railway Multi Env
 
 on:
   push:
+    branches:
+      - qa
+      - main
+
+  pull_request:
     branches:
       - main
 
 jobs:
 
+  # TESTS — corre en push a qa/main y en PRs a main
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install deps
+        run: npm ci
 
       - name: Run tests
         run: npm test
 
-  deploy:
+  # DEPLOY QA — solo cuando hay push a la rama qa
+  deploy-qa:
+    if: github.ref == 'refs/heads/qa' && github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - uses: actions/checkout@v3
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy to Railway
-        run: railway up --service version-control-web
+      - name: Deploy QA
+        run: railway up --service version-control-web-qa
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_QA }}
+
+  # DEPLOY PROD — solo cuando se mergea un PR a main (push a main)
+  deploy-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy PROD
+        run: railway up --service version-control-web-prod
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
