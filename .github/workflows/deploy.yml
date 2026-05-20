@@ -8,9 +8,7 @@ on:
 
 jobs:
 
-  # ==========================================
   # QA PIPELINE
-  # ==========================================
   test-qa:
     name: Test QA
     if: github.ref == 'refs/heads/qa'
@@ -32,7 +30,7 @@ jobs:
         run: npm test
 
   deploy-qa:
-    name: Deploy QA Railway
+    name: Deploy QA Vercel
     if: github.ref == 'refs/heads/qa'
     needs: test-qa
     runs-on: ubuntu-latest
@@ -41,17 +39,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
+      - name: Install Vercel CLI
+        run: npm install -g vercel
 
-      - name: Deploy QA to Railway
-        run: railway up --service version-control-web-qa
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_QA }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
-  # ==========================================
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
+
+      - name: Deploy QA to Vercel
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
+
   # PRODUCTION PIPELINE
-  # ==========================================
   test-prod:
     name: Test Production
     if: github.ref == 'refs/heads/main'
