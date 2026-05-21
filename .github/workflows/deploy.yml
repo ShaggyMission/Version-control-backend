@@ -1,24 +1,28 @@
-name: CI/CD
+name: CI/CD GitOps
 
 on:
   push:
     branches:
       - qa
-      - main
+    tags:
+      - 'v*'
 
 jobs:
 
+  #################################################
   # QA PIPELINE
+  #################################################
+
   test-qa:
     name: Test QA
     if: github.ref == 'refs/heads/qa'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -36,41 +40,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      - name: Pull Vercel Environment Information
+      - name: Pull Vercel env
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
-      - name: Build Project Artifacts
+      - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
-      - name: Deploy QA to Vercel
+      - name: Deploy QA
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
+  #################################################
   # PRODUCTION PIPELINE
+  #################################################
+
   test-prod:
     name: Test Production
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -82,65 +89,73 @@ jobs:
         run: npm test
 
   build-and-push:
-    name: Build and Push Docker Image
-    if: github.ref == 'refs/heads/main'
+    name: Build and Push Docker
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: test-prod
     runs-on: ubuntu-latest
 
+    outputs:
+      version_tag: ${{ steps.version.outputs.version }}
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Login to DockerHub
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Login DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Generate version tag
-        run: |
-          VERSION_TAG=v$(date +'%Y%m%d%H%M%S')
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-
-      - name: Build Docker image
+      - name: Build image
         run: |
           docker build . \
             --file Dockerfile \
-            --tag shaggymission/version-control-web:${VERSION_TAG} \
-            --tag shaggymission/version-control-web:latest
+            --tag shaggymission/version-control-web:${{ steps.version.outputs.version }}
 
-      - name: Push Docker image
+      - name: Push image
         run: |
-          docker push shaggymission/version-control-web:${VERSION_TAG}
-          docker push shaggymission/version-control-web:latest
+          docker push shaggymission/version-control-web:${{ steps.version.outputs.version }}
 
-  deploy-prod:
-    name: Deploy Production Vercel
-    if: github.ref == 'refs/heads/main'
+  #################################################
+  # UPDATE GITOPS REPO
+  #################################################
+
+  update-gitops:
+    name: Update GitOps Repository
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Clone GitOps repo
+        run: |
+          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/shaggymission/gitops-infra.git
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel
+      - name: Update image version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          cd gitops-infra
 
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          sed -i "s|image: .*|image: shaggymission/version-control-web:${VERSION}|g" \
+            apps/version-control-web/deployment.yaml
 
-      - name: Deploy to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: Commit and push
+        run: |
+          cd gitops-infra
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git add .
+
+          git commit -m "Deploy ${GITHUB_REF#refs/tags/}" || echo "No changes"
+
+          git push
