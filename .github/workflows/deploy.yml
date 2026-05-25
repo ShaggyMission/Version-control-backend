@@ -11,7 +11,7 @@ on:
 jobs:
 
   #################################################
-  # QA (VERCEL)
+  # QA PIPELINE (VERCEL)
   #################################################
 
   test-qa:
@@ -56,7 +56,7 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
   #################################################
-  # PROD (AZURE VM)
+  # PROD PIPELINE (AZURE VM)
   #################################################
 
   test-prod:
@@ -80,6 +80,9 @@ jobs:
     needs: test-prod
     runs-on: ubuntu-latest
 
+    env:
+      VERSION: ${{ github.ref_name }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -88,11 +91,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Get tag version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build Docker image
         run: |
@@ -110,6 +108,9 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
 
+    env:
+      VERSION: ${{ github.ref_name }}
+
     steps:
       - name: Deploy to Azure VM
         uses: appleboy/ssh-action@v1.0.3
@@ -117,8 +118,9 @@ jobs:
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          envs: VERSION
           script: |
-            VERSION=${GITHUB_REF#refs/tags/}
+            echo "Deploying version $VERSION"
 
             docker pull shaggymission/version-control-web:$VERSION
 
