@@ -123,10 +123,10 @@ jobs:
 
             docker pull shaggymission/version-control-web:$VERSION
 
-            docker stop webapp || true
-            docker rm webapp || true
+            docker stop apitopics || true
+            docker rm apitopics || true
 
             docker run -d \
-              --name webapp \
+              --name apitopics \
               -p 3001:3001 \
               shaggymission/version-control-web:$VERSION
