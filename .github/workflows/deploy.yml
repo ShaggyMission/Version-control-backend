@@ -10,9 +10,7 @@ on:
 
 jobs:
 
-  #################################################
   # QA PIPELINE (VERCEL)
-  #################################################
 
   test-qa:
     name: Test QA
@@ -55,9 +53,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 
-  #################################################
   # PROD PIPELINE (AZURE VM)
-  #################################################
 
   test-prod:
     name: Test Production
@@ -121,6 +117,9 @@ jobs:
           envs: VERSION
           script: |
             echo "Deploying version $VERSION"
+            
+            sudo docker --version || sudo apt install -y docker.io
+            sudo service docker start || true
 
             docker pull shaggymission/version-control-web:$VERSION
 
