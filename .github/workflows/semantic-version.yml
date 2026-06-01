@@ -42,11 +42,17 @@ jobs:
             major=$((major + 1))
             minor=0
             patch=0
+
           elif echo "$commits" | grep -q "^feat:"; then
             minor=$((minor + 1))
             patch=0
-          else
+
+          elif echo "$commits" | grep -q "^fix:"; then
             patch=$((patch + 1))
+
+          else
+            echo "No version bump required"
+            exit 0
           fi
 
           new_tag="v$major.$minor.$patch"
@@ -54,6 +60,7 @@ jobs:
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Create Tag
+        if: steps.version.outputs.new_tag != ''
         run: |
           git tag ${{ steps.version.outputs.new_tag }}
           git push origin ${{ steps.version.outputs.new_tag }}
