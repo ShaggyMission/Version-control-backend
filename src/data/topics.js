@@ -67,8 +67,8 @@ module.exports = [
   },
   {
     id: 12,
-    title: "lis",
+    title: "Ing. Noguera",
     description: "Modelo donde Git es la fuente única de verdad para infraestructura.",
     link: "https://www.gitops.tech/"
   }
-];
+]
