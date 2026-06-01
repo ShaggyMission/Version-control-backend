@@ -117,7 +117,7 @@ jobs:
           envs: VERSION
           script: |
             echo "Deploying version $VERSION"
-            
+
             sudo docker --version || sudo apt install -y docker.io
             sudo service docker start || true
 
@@ -130,3 +130,24 @@ jobs:
               --name apitopics \
               -p 3001:3001 \
               shaggymission/version-control-web:$VERSION
+
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
