@@ -10,7 +10,6 @@ tags:
 
 jobs:
 
-
 # QA PIPELINE (VERCEL)
 
 test-qa:
@@ -87,7 +86,6 @@ steps:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_QA }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_QA }}
 ```
-
 
 # PROD PIPELINE (AZURE VM)
 
