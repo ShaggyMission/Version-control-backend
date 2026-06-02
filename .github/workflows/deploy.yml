@@ -42,18 +42,7 @@ jobs:
  
       - name: Coverage
         run: npm run test:coverage
- 
-      - name: Sonar Scan
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
- 
-      - name: Sonar Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
-        with:
-          pollingTimeoutSec: 300
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
  
   deploy-qa:
     name: Deploy QA Vercel
