@@ -77,7 +77,7 @@ jobs:
  
   test-prod:
     name: Production Quality Checks
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/main')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -139,7 +139,7 @@ jobs:
  
   deploy-prod:
     name: Deploy Production Azure VM
-    if: startsWith(github.ref, 'refs/tags/main')
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build-and-push
     runs-on: ubuntu-latest
     env:
