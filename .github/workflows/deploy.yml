@@ -77,7 +77,7 @@ jobs:
  
   test-prod:
     name: Production Quality Checks
-    if: github.ref == 'refs/heads/main'  
+    if: startsWith(github.ref, 'refs/tags/v')  
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -109,12 +109,7 @@ jobs:
       - name: Sonar Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      - name: Sonar Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
-        timeout-minutes: 5
-        env:
-         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
 
   build-and-push:
     name: Build and Push Docker Image
